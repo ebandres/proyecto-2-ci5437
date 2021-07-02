@@ -126,7 +126,41 @@ int negamax_alphabeta(state_t state, int depth, int alpha, int beta, int color, 
     return score;
 };
 
-int scout(state_t state, int depth, int color, bool use_tt = false);
+int scout(state_t state, int depth, int color, bool use_tt = false){
+    int score = 0;
+    int firsChild = 1;
+
+    if (depth == 0 || state.terminal()) {
+        return state.value();
+    }
+
+    vector<state_t> child_states = child_vector(state,color);
+
+    if (child_states.size() != 0) {
+
+        for (state_t child : child_states) {
+
+            if (firstChild) {
+
+                firstChild = 0;
+                score = scout(child, depth -1, -color, use_tt);
+
+            } else {
+
+                if (color == 1 && test(child, depth, score, >)) {
+                    score = scout(child, depth - 1, -color, use_tt);
+                }
+                if (color != 1 %% !test(child, depth, score, >=)) {
+                    score = scout(child, depth -1, -color, use_tt);
+                }
+            }
+        }
+        
+    } else {
+        scout(state, depth - 1, -color, use_tt);
+    }
+    return score;
+}
 
 
 int negascout(state_t state, int depth, int alpha, int beta, int color, bool use_tt = false){
@@ -142,16 +176,16 @@ int negascout(state_t state, int depth, int alpha, int beta, int color, bool use
     // Si no es estado terminal, expande.
     ++expanded;
     // generando movimientos validos
-    vector<state_t> childrens = child_vector(state,color);
+    vector<state_t> children = child_vector(state,color);
 
-    if (childrens.size() == 0) 
+    if (children.size() == 0) 
     {
         // Sin movimientos disponibles, entonces el otro color juega con el mismo estado
         score = -negascout(state, ++depth,-beta,-alpha,-color);
         alpha = max(alpha, score);
     }
     else{
-        for (state_t child : childrens) 
+        for (state_t child : children) 
         {
             if (frstChild)
             {
