@@ -128,7 +128,7 @@ int negamax_alphabeta(state_t state, int depth, int alpha, int beta, int color, 
 
 int scout(state_t state, int depth, int color, bool use_tt = false){
     int score = 0;
-    int firsChild = 1;
+    int firstChild = 1;
 
     if (depth == 0 || state.terminal()) {
         return state.value();
@@ -147,10 +147,10 @@ int scout(state_t state, int depth, int color, bool use_tt = false){
 
             } else {
 
-                if (color == 1 && test(child, depth, score, >)) {
+                if (color == 1 && test(child, depth, score, 1, color)) {
                     score = scout(child, depth - 1, -color, use_tt);
                 }
-                if (color != 1 %% !test(child, depth, score, >=)) {
+                if (color != 1 && !test(child, depth, score, 0, color)) {
                     score = scout(child, depth -1, -color, use_tt);
                 }
             }
@@ -160,6 +160,30 @@ int scout(state_t state, int depth, int color, bool use_tt = false){
         scout(state, depth - 1, -color, use_tt);
     }
     return score;
+}
+
+bool test(state_t state, int depth, int score, bool comp, int color) {
+    if (depth == 0 || state.terminal()) {
+        if (comp) {
+            return state.value() > score ? true : false;
+        }
+        return state.value() >= score ? true : false;
+    }
+
+    vector<state_t> child_states = child_vector(state,color);
+
+    if (child_states.size() != 0) {
+        for (state_t child : child_states) {
+            if (color == 1 && test(child, depth - 1, score, comp, -color)) {
+                return true;
+            }
+
+            if (color != 1 && !test(child, depth - 1, score, comp, -color)) {
+                return false;
+            }
+        }
+    }
+    return !(color == 1);
 }
 
 
