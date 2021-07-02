@@ -39,10 +39,144 @@ hash_table_t TTable[2];
 //int maxmin(state_t state, int depth, bool use_tt);
 //int minmax(state_t state, int depth, bool use_tt = false);
 //int maxmin(state_t state, int depth, bool use_tt = false);
-int negamax(state_t state, int depth, int color, bool use_tt = false);
-int negamax(state_t state, int depth, int alpha, int beta, int color, bool use_tt = false);
+
+vector<state_t> child_vector(state_t state, int color) {
+    // Contrincante = true para negro y false para blanco
+    bool Contrincante = (color == 1)? true:false;
+    vector<state_t> movement;
+    state_t new_state;
+
+    // Almacena los movimientos validos
+    for(int position = 0; position < DIM; ++position) 
+    {
+        if (state.outflank(Contrincante, position)) 
+        {
+            new_state = state.move(Contrincante, position);
+            movement.push_back(new_state);
+        }
+    }
+    return movement;
+};
+
+int negamax(state_t state, int depth, int color, bool use_tt = false){
+    ++generated;
+    if (state.terminal())
+    {
+        return color * state.value();
+    }
+
+    // si no es estado terminal, expande
+    ++expanded;
+    int alpha = numeric_limits<int>::min();
+    // generando movimientos validos
+    vector<state_t> child_states = child_vector(state,color);
+    
+    if (child_states.size() != 0)
+    {
+        for (state_t child : child_states) 
+        {
+            alpha = max(alpha, -negamax(child, ++depth, -color, use_tt));
+        }
+    }
+
+    else
+    {
+        // Sin modificaciones al estado, el otro color juega con el mismo estado.
+        alpha = max(alpha, -negamax(state, ++depth, -color, use_tt));
+    }
+    return alpha;
+};
+
+
+int negamax_alphabeta(state_t state, int depth, int alpha, int beta, int color, bool use_tt = false){
+
+    int score;
+    int val;
+    ++generated;
+
+    if (state.terminal())
+    {
+        return color * state.value();
+    }
+    // si no es estado terminal, expande.
+    ++expanded;
+    score = numeric_limits<int>::min();
+    // generando movimientos validos
+    vector<state_t> child_states = child_vector(state,color);
+
+    if (child_states.size() != 0)
+    {
+        for (state_t child : child_states) 
+        {
+            val = -negamax_alphabeta(child, ++depth, -beta, -alpha, -color, use_tt);
+            score = max(score,val);
+            alpha = max(alpha,val);
+            if (alpha >= beta)
+            {
+                break;
+            } 
+        }
+    }
+    else
+    {
+        // Sin movimientos disponibles, entonces el otro color juega con el mismo estado
+        val = -negamax_alphabeta(state, ++depth, -beta, -alpha, -color, use_tt);
+        score = max(score,val);
+    }
+    return score;
+};
+
 int scout(state_t state, int depth, int color, bool use_tt = false);
-int negascout(state_t state, int depth, int alpha, int beta, int color, bool use_tt = false);
+
+
+int negascout(state_t state, int depth, int alpha, int beta, int color, bool use_tt = false){
+    int score;
+    int frstChild = 1;
+
+    ++generated;
+    if (state.terminal())
+    {
+        return color * state.value();
+    }
+
+    // Si no es estado terminal, expande.
+    ++expanded;
+    // generando movimientos validos
+    vector<state_t> childrens = child_vector(state,color);
+
+    if (childrens.size() == 0) 
+    {
+        // Sin movimientos disponibles, entonces el otro color juega con el mismo estado
+        score = -negascout(state, ++depth,-beta,-alpha,-color);
+        alpha = max(alpha, score);
+    }
+    else{
+        for (state_t child : childrens) 
+        {
+            if (frstChild)
+            {
+                frstChild = 0;
+                score = -negascout(child, ++depth, -beta, -alpha, -color);
+            }
+            else
+            {
+                score = -negascout(child, ++depth, -alpha - 1, -alpha, -color);
+                if ((alpha < score) && (score < beta))
+                {
+                    score = -negascout(child, ++depth,-beta,-score,-color);
+                }
+            }
+
+            alpha = std::max(alpha,score);
+            if (alpha >= beta)
+            {
+                break;
+            }
+        }
+    }
+    return alpha;
+};
+
 
 int main(int argc, const char **argv) {
     state_t pv[128];
@@ -97,13 +231,13 @@ int main(int argc, const char **argv) {
 
         try {
             if( algorithm == 1 ) {
-                //value = negamax(pv[i], 0, color, use_tt);
+                value = negamax(pv[i], 0, color, use_tt);
             } else if( algorithm == 2 ) {
-                //value = negamax(pv[i], 0, -200, 200, color, use_tt);
+                value = negamax_alphabeta(pv[i], 0, -200, 200, color, use_tt);
             } else if( algorithm == 3 ) {
                 //value = scout(pv[i], 0, color, use_tt);
             } else if( algorithm == 4 ) {
-                //value = negascout(pv[i], 0, -200, 200, color, use_tt);
+                value = negascout(pv[i], 0, -200, 200, color, use_tt);
             }
         } catch( const bad_alloc &e ) {
             cout << "size TT[0]: size=" << TTable[0].size() << ", #buckets=" << TTable[0].bucket_count() << endl;
