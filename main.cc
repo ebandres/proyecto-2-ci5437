@@ -127,7 +127,7 @@ int negamax_alphabeta(state_t state, int depth, int alpha, int beta, int color, 
 };
 
 bool test(state_t state, int depth, int score, bool comp, int color) {
-    if (depth == 0 || state.terminal()) {
+    if (state.terminal()) {
         if (comp) {
             return state.value() > score ? true : false;
         }
@@ -138,14 +138,16 @@ bool test(state_t state, int depth, int score, bool comp, int color) {
 
     if (child_states.size() != 0) {
         for (state_t child : child_states) {
-            if (color == 1 && test(child, depth - 1, score, comp, -color)) {
+            if (color == 1 && test(child, ++depth, score, comp, -color)) {
                 return true;
             }
 
-            if (color != 1 && !test(child, depth - 1, score, comp, -color)) {
+            if (color != 1 && !test(child, ++depth, score, comp, -color)) {
                 return false;
             }
         }
+    } else {
+        return test(state, ++depth, score, comp, -color);
     }
     return !(color == 1);
 }
@@ -154,7 +156,10 @@ int scout(state_t state, int depth, int color, bool use_tt = false){
     int score = 0;
     int firstChild = 1;
 
-    if (depth == 0 || state.terminal()) {
+    ++generated;
+
+    if (state.terminal()) {
+
         return state.value();
     }
 
@@ -167,21 +172,22 @@ int scout(state_t state, int depth, int color, bool use_tt = false){
             if (firstChild) {
 
                 firstChild = 0;
-                score = scout(child, depth -1, -color, use_tt);
+                score = scout(child, ++depth, -color, use_tt);
 
             } else {
 
-                if (color == 1 && test(child, depth, score, 1, color)) {
-                    score = scout(child, depth - 1, -color, use_tt);
+                if (color == 1 && test(child, depth, score, 1, -color)) {
+                    score = scout(child, ++depth, -color, use_tt);
                 }
-                if (color != 1 && !test(child, depth, score, 0, color)) {
-                    score = scout(child, depth -1, -color, use_tt);
+                if (color != 1 && !test(child, depth, score, 0, -color)) {
+                    score = scout(child, ++depth, -color, use_tt);
                 }
             }
         }
         
     } else {
-        scout(state, depth - 1, -color, use_tt);
+        score = scout(state, ++depth, -color, use_tt);
+        
     }
     return score;
 }
@@ -293,7 +299,7 @@ int main(int argc, const char **argv) {
             } else if( algorithm == 2 ) {
                 value = negamax_alphabeta(pv[i], 0, -200, 200, color, use_tt);
             } else if( algorithm == 3 ) {
-                //value = scout(pv[i], 0, color, use_tt);
+                value = scout(pv[i], 0, color, use_tt);
             } else if( algorithm == 4 ) {
                 value = negascout(pv[i], 0, -200, 200, color, use_tt);
             }
