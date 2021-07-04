@@ -64,7 +64,7 @@ vector<state_t> child_vector(state_t state, int color) {
 };
 
 void check_time(float st) {
-    if (Utils::read_time_in_seconds() - st > 10)
+    if (Utils::read_time_in_seconds() - st > time_limit)
     {
         cout << "Time limit reached" << endl;
         myfile << "Time limit reached" << endl;
