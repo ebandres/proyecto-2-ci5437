@@ -8,17 +8,19 @@
 #include <limits>
 #include <fstream>
 #include <string>
+#include <chrono>
 #include "othello_cut.h" // won't work correctly until .h is fixed!
 #include "utils.h"
 
 #include <unordered_map>
 
 using namespace std;
+using namespace std::chrono;
 
 unsigned expanded = 0;
 unsigned generated = 0;
 int tt_threshold = 32; // threshold to save entries in TT
-float time_limit = 3600;
+double time_limit = 3600;
 ofstream myfile;
 
 
@@ -63,8 +65,10 @@ vector<state_t> child_vector(state_t state, int color) {
     return movement;
 };
 
-void check_time(float st) {
-    if (Utils::read_time_in_seconds() - st > time_limit)
+void check_time(time_point<high_resolution_clock> st) {
+    auto curr_time = high_resolution_clock::now();
+	duration<double> elapsed = curr_time - st;
+    if (elapsed.count() > time_limit)
     {
         cout << "Time limit reached" << endl;
         myfile << "Time limit reached" << endl;
@@ -73,7 +77,7 @@ void check_time(float st) {
     }
 }
 
-int negamax(state_t state, int depth, int color, float st, bool use_tt = false){
+int negamax(state_t state, int depth, int color, time_point<high_resolution_clock> st, bool use_tt){
     
     check_time(st);
 
@@ -106,7 +110,7 @@ int negamax(state_t state, int depth, int color, float st, bool use_tt = false){
 };
 
 
-int negamax_alphabeta(state_t state, int depth, int alpha, int beta, int color, float st, bool use_tt = false){
+int negamax_alphabeta(state_t state, int depth, int alpha, int beta, int color, time_point<high_resolution_clock> st, bool use_tt){
     check_time(st);
 
     int score;
@@ -171,7 +175,7 @@ bool test(state_t state, int depth, int score, bool comp, int color) {
     return !(color == 1);
 }
 
-int scout(state_t state, int depth, int color, float st, bool use_tt = false){
+int scout(state_t state, int depth, int color, time_point<high_resolution_clock> st, bool use_tt){
     check_time(st);
     
     int score = 0;
@@ -216,7 +220,7 @@ int scout(state_t state, int depth, int color, float st, bool use_tt = false){
 }
 
 
-int negascout(state_t state, int depth, int alpha, int beta, int color, float st, bool use_tt = false){
+int negascout(state_t state, int depth, int alpha, int beta, int color, time_point<high_resolution_clock> st, bool use_tt){
     check_time(st);
     
     int score;
@@ -324,7 +328,7 @@ int main(int argc, const char **argv) {
     cout << "Moving along PV:" << endl;
     myfile << "Moving along PV:" << endl;
 
-    float main_start_time = Utils::read_time_in_seconds();
+    time_point<high_resolution_clock> main_start_time = high_resolution_clock::now();
     for( int i = 0; i <= npv; ++i ) {
         //cout << pv[i];
         int value = 0;
