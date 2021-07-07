@@ -345,7 +345,7 @@ int main(int argc, const char **argv) {
             } else if( algorithm == 2 ) {
                 value = negamax_alphabeta(pv[i], 33, -200, 200, color, main_start_time,use_tt);
             } else if( algorithm == 3 ) {
-                value = scout(pv[i], 33, color, main_start_time, use_tt);
+                value = color * scout(pv[i], 33, color, main_start_time, use_tt);
             } else if( algorithm == 4 ) {
                 value = negascout(pv[i], 33, -200, 200, color, main_start_time, use_tt);
             }
