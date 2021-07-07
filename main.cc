@@ -320,8 +320,7 @@ int main(int argc, const char **argv) {
 
     int algorithm = 0;
     if( argc > 1 ) algorithm = atoi(argv[1]);
-    //bool use_tt = argc > 2;
-    bool use_tt = true;
+    bool use_tt = argc > 2;
     string tt = use_tt ? "_tt" : "";
 
     myfile.open(to_string(algorithm) + tt + ".txt", ios::out | ios::trunc);
