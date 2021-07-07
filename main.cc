@@ -28,6 +28,7 @@ ofstream myfile;
 struct stored_info_t {
     int value_;
     int type_;
+    int depth_;
     enum { EXACT, LOWER, UPPER };
     stored_info_t(int value = -100, int type = LOWER) : value_(value), type_(type) { }
 };
@@ -82,7 +83,7 @@ int negamax(state_t state, int depth, int color, time_point<high_resolution_cloc
     check_time(st);
 
     ++generated;
-    if (state.terminal())
+    if (depth == 0 || state.terminal())
     {
         return color * state.value();
     }
@@ -116,8 +117,31 @@ int negamax_alphabeta(state_t state, int depth, int alpha, int beta, int color, 
     int score;
     int val;
     ++generated;
+    int alphaOrig = alpha;
 
-    if (state.terminal())
+    if (use_tt) {
+
+        if (TTable[1 == color].find(state) != TTable[1 == color].end()) {
+            stored_info_t info = TTable[1 == color].at(state);
+            if (info.depth_ >= depth) {
+
+                if (info.type_ == 0) {
+                    return info.value_ ;
+                }
+                else if (info.type_ == 1) {
+                    alpha = max(alpha, info.value_);
+                } 
+                else if (info.type_ == 2) {
+                    beta = min(beta, info.value_);
+                }
+                if (alpha >= beta) {
+                    return info.value_ ;
+                }
+            }
+        }
+    }
+
+    if (depth == 0 || state.terminal())
     {
         return color * state.value();
     }
@@ -146,11 +170,29 @@ int negamax_alphabeta(state_t state, int depth, int alpha, int beta, int color, 
         val = -negamax_alphabeta(state, depth - 1, -beta, -alpha, -color, st, use_tt);
         score = max(score,val);
     }
+
+    if (use_tt) {
+        stored_info_t info2 = stored_info_t(score);
+        info2.depth_ = depth;
+        if (score <= alphaOrig) {
+            info2.type_ = 2;
+        }
+        else if (score >= beta) {
+            info2.type_ = 1;
+        }
+        else {
+            info2.type_ = 0;
+        }
+
+        TTable[1 == color][state] = info2;
+
+    }
+    
     return score;
 };
 
 bool test(state_t state, int depth, int score, bool comp, int color) {
-    if (state.terminal()) {
+    if (depth == 0 || state.terminal()) {
         if (comp) {
             return state.value() > score ? true : false;
         }
@@ -183,7 +225,7 @@ int scout(state_t state, int depth, int color, time_point<high_resolution_clock>
 
     ++generated;
 
-    if (state.terminal()) {
+    if (depth == 0 || state.terminal()) {
 
         return state.value();
     }
@@ -227,7 +269,7 @@ int negascout(state_t state, int depth, int alpha, int beta, int color, time_poi
     int frstChild = 1;
 
     ++generated;
-    if (state.terminal())
+    if (depth == 0 || state.terminal())
     {
         return color * state.value();
     }
@@ -278,7 +320,8 @@ int main(int argc, const char **argv) {
 
     int algorithm = 0;
     if( argc > 1 ) algorithm = atoi(argv[1]);
-    bool use_tt = argc > 2;
+    //bool use_tt = argc > 2;
+    bool use_tt = true;
     string tt = use_tt ? "_tt" : "";
 
     myfile.open(to_string(algorithm) + tt + ".txt", ios::out | ios::trunc);
