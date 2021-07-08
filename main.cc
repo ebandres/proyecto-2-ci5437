@@ -2,7 +2,9 @@
 // Universidad Simon Bolivar, 2012.
 // Author: Blai Bonet
 // Last Revision: 1/11/16
-// Modified by: 
+// Modified by: Emmanuel Bandres, 14-10071
+//              Daniela Caballero, 14-10140
+//              Fernando Gonzalez, 08-10464
 
 #include <iostream>
 #include <limits>
