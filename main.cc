@@ -27,10 +27,10 @@ ofstream myfile;
 // Transposition table (it is not necessary to implement TT)
 struct stored_info_t {
     int value_;
-    int type_;
     int depth_;
+    int type_;
     enum { EXACT, LOWER, UPPER };
-    stored_info_t(int value = -100, int type = LOWER) : value_(value), type_(type) { }
+    stored_info_t(int value = -100, int depth = 0, int type = LOWER) : value_(value), depth_(depth), type_(type) { }
 };
 
 struct hash_function_t {
@@ -84,13 +84,11 @@ int negamax(state_t state, int depth, int color, time_point<high_resolution_cloc
 
     ++generated;
 
-    if (use_tt) {
-       if (TTable[1 == color].find(state) != TTable[1 == color].end()) {
-            stored_info_t info = TTable[1 == color].at(state);
-            if (info.depth_ >= depth) { 
-                return info.value_ ;
-            }
-       }
+    if (use_tt && (TTable[1 == color].find(state) != TTable[1 == color].end())) {
+
+        stored_info_t info = TTable[1 == color].at(state);
+        if (info.depth_ >= depth) return info.value_ ;
+        
     }
 
     if (depth == 0 || state.terminal())
@@ -119,10 +117,8 @@ int negamax(state_t state, int depth, int color, time_point<high_resolution_cloc
     }
 
     if (use_tt) {
-        stored_info_t info2 = stored_info_t(alpha);
-        info2.depth_ = depth;
-        info2.type_ = 0;
-        TTable[1 == color][state] = info2;
+        stored_info_t state_info = stored_info_t(alpha, depth, 0);
+        TTable[1 == color][state] = state_info;
 
     }
     return alpha;
@@ -135,27 +131,17 @@ int negamax_alphabeta(state_t state, int depth, int alpha, int beta, int color, 
     int score;
     int val;
     ++generated;
-    int alphaOrig = alpha;
+    int prev_alpha = alpha;
 
-    if (use_tt) {
+    if (use_tt && (TTable[1 == color].find(state) != TTable[1 == color].end())) {
 
-        if (TTable[1 == color].find(state) != TTable[1 == color].end()) {
-            stored_info_t info = TTable[1 == color].at(state);
-            if (info.depth_ >= depth) {
+        stored_info_t info = TTable[1 == color].at(state);
+        if (info.depth_ >= depth) {
 
-                if (info.type_ == 0) {
-                    return info.value_ ;
-                }
-                else if (info.type_ == 1) {
-                    alpha = max(alpha, info.value_);
-                } 
-                else if (info.type_ == 2) {
-                    beta = min(beta, info.value_);
-                }
-                if (alpha >= beta) {
-                    return info.value_ ;
-                }
-            }
+            if (info.type_ == 0) return info.value_ ;
+            else if (info.type_ == 1) alpha = max(alpha, info.value_);
+            else if (info.type_ == 2) beta = min(beta, info.value_);
+            if (alpha >= beta) return info.value_ ;
         }
     }
 
@@ -190,20 +176,13 @@ int negamax_alphabeta(state_t state, int depth, int alpha, int beta, int color, 
     }
 
     if (use_tt) {
-        stored_info_t info2 = stored_info_t(score);
-        info2.depth_ = depth;
-        if (score <= alphaOrig) {
-            info2.type_ = 2;
-        }
-        else if (score >= beta) {
-            info2.type_ = 1;
-        }
-        else {
-            info2.type_ = 0;
-        }
+        stored_info_t state_info = stored_info_t(score, depth);
 
-        TTable[1 == color][state] = info2;
+        if (score <= prev_alpha) state_info.type_ = 2;
+        else if (score >= beta) state_info.type_ = 1;
+        else state_info.type_ = 0;
 
+        TTable[1 == color][state] = state_info;
     }
     
     return score;
@@ -243,13 +222,11 @@ int scout(state_t state, int depth, int color, time_point<high_resolution_clock>
 
     ++generated;
 
-    if (use_tt) {
-       if (TTable[1 == color].find(state) != TTable[1 == color].end()) {
-            stored_info_t info = TTable[1 == color].at(state);
-            if (info.depth_ >= depth) { 
-                return info.value_ ;
-            }
-       }
+    if (use_tt && (TTable[1 == color].find(state) != TTable[1 == color].end())) {
+
+        stored_info_t info = TTable[1 == color].at(state);
+
+        if (info.depth_ >= depth) return info.value_ ;
     }
 
     if (depth == 0 || state.terminal()) {
@@ -287,11 +264,8 @@ int scout(state_t state, int depth, int color, time_point<high_resolution_clock>
     }
 
     if (use_tt) {
-        stored_info_t info2 = stored_info_t(score);
-        info2.depth_ = depth;
-        info2.type_ = 0;
-        TTable[1 == color][state] = info2;
-
+        stored_info_t state_info = stored_info_t(score, depth, 0);
+        TTable[1 == color][state] = state_info;
     }
 
     return score;
@@ -303,31 +277,23 @@ int negascout(state_t state, int depth, int alpha, int beta, int color, time_poi
     
     int score;
     int frstChild = 1;
-    int alphaOrig = alpha;
+    int prev_alpha = alpha;
 
     ++generated;
 
-    if (use_tt) {
+    if (use_tt && (TTable[1 == color].find(state) != TTable[1 == color].end())) {
 
-        if (TTable[1 == color].find(state) != TTable[1 == color].end()) {
-            stored_info_t info = TTable[1 == color].at(state);
-            if (info.depth_ >= depth) {
+        stored_info_t info = TTable[1 == color].at(state);
 
-                if (info.type_ == 0) {
-                    return info.value_ ;
-                }
-                else if (info.type_ == 1) {
-                    alpha = max(alpha, info.value_);
-                } 
-                else if (info.type_ == 2) {
-                    beta = min(beta, info.value_);
-                }
-                if (alpha >= beta) {
-                    return info.value_ ;
-                }
-            }
+        if (info.depth_ >= depth) {
+
+            if (info.type_ == 0) return info.value_ ;
+            else if (info.type_ == 1) alpha = max(alpha, info.value_);
+            else if (info.type_ == 2) beta = min(beta, info.value_);
+            if (alpha >= beta) return info.value_ ;
         }
     }
+
     if (depth == 0 || state.terminal())
     {
         return color * state.value();
@@ -370,21 +336,15 @@ int negascout(state_t state, int depth, int alpha, int beta, int color, time_poi
     }
 
     if (use_tt) {
-        stored_info_t info2 = stored_info_t(alpha);
-        info2.depth_ = depth;
-        if (alpha <= alphaOrig) {
-            info2.type_ = 2;
-        }
-        else if (alpha >= beta) {
-            info2.type_ = 1;
-        }
-        else {
-            info2.type_ = 0;
-        }
+        stored_info_t state_info = stored_info_t(alpha, depth);
 
-        TTable[1 == color][state] = info2;
+        if (alpha <= prev_alpha) state_info.type_ = 2;
+        else if (alpha >= beta) state_info.type_ = 1;
+        else state_info.type_ = 0;
 
+        TTable[1 == color][state] = state_info;
     }
+
     return alpha;
 };
 
